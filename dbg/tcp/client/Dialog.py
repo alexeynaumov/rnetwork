@@ -1,0 +1,168 @@
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2015 Alexey Naumov <rocketbuzzz@gmail.com>
+#
+# This file is part of rnetwork.
+#
+# rnetwork is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or (at
+# your option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+from PyQt4.QtCore import QByteArray, QTime, QSettings, Qt
+from PyQt4.QtGui import QDialog, QIcon
+from PyQt4.QtNetwork import QTcpSocket
+
+from rnetwork.tcp import TcpClient
+from dbg.tcp.client.ui_Dialog import Ui_Dialog
+from rnetwork.helpers import stringToBytes, bytesToString
+
+
+class Dialog(QDialog, Ui_Dialog):
+    def __init__(self, parent=None):
+        QDialog.__init__(self, parent)
+
+        self.setupUi(self)
+        self.__initialize()
+
+    def __initialize(self):
+        self.setWindowIcon(QIcon("./client/icons/client.svg"))
+
+        self.tcpClient = TcpClient()
+        self.tcpClient.onConnected = self.onConnected
+        self.tcpClient.onDisconnected = self.onDisconnected
+        self.tcpClient.onError = self.onError
+        self.tcpClient.onRead = self.onRead
+
+        self.pushButtonConnectDisconnect.clicked.connect(self.onPushButtonConnectDisconnectClicked)
+        self.pushButtonSend.clicked.connect(self.onPushButtonSendClicked)
+        self.checkBoxRawText.stateChanged.connect(self.onCheckBoxRawTextStateChanged)
+
+        self.__loadSettings()
+
+    def __postText(self, text):
+        if self.checkBoxTimestamp.isChecked():
+            time = QTime.currentTime().toString()
+            self.textEditTraffic.append("%s - %s" % (time, text))
+        else:
+            self.textEditTraffic.append(text)
+
+    def __saveSettings(self):
+        settings = QSettings("Rocket Labs", "tdbg-client")
+        settings.setValue("host", self.lineEditHost.text())
+        settings.setValue("port", self.spinBoxPort.value())
+        settings.setValue("format", self.comboBoxFormat.currentIndex())
+        settings.setValue("leadingZeroes", self.checkBoxLeadingZeroes.isChecked())
+        settings.setValue("timestamp", self.checkBoxTimestamp.isChecked())
+        settings.setValue("rawText", self.checkBoxRawText.isChecked())
+
+    def __loadSettings(self):
+        settings = QSettings("Rocket Labs", "tdbg-client")
+        self.lineEditHost.setText(settings.value("host", "localhost").toString())
+        self.spinBoxPort.setValue(settings.value("port", 80).toInt()[0])
+        self.comboBoxFormat.setCurrentIndex(settings.value("format", 0).toInt()[0])
+        self.checkBoxLeadingZeroes.setChecked(settings.value("leadingZeroes", False).toBool())
+        self.checkBoxTimestamp.setChecked(settings.value("timestamp", False).toBool())
+        self.checkBoxRawText.setChecked(settings.value("rawText", False).toBool())
+
+    def closeEvent(self, event):
+        self.__saveSettings()
+        super(Dialog, self).closeEvent(event)
+
+    def onConnected(self):
+        self.textEditTraffic.setEnabled(True)
+        self.lineEditData.setEnabled(True)
+        self.pushButtonSend.setEnabled(True)
+        self.pushButtonConnectDisconnect.setText("Disconnect")
+
+    def onDisconnected(self):
+        self.textEditTraffic.setEnabled(False)
+        self.lineEditData.setEnabled(False)
+        self.pushButtonSend.setEnabled(False)
+        self.pushButtonConnectDisconnect.setText("Connect")
+
+    def onError(self, error):
+        self.__postText("E: [%s] %s." % (error.code, error.description))
+
+    def onRead(self, data):
+        if self.checkBoxRawText.isChecked():
+            dataFormat = "S"
+            text = str(data)
+
+        else:
+            INDEX_BASE = {0: 2, 1: 8, 2: 10, 3: 16}
+            index = self.comboBoxFormat.currentIndex()
+            base = INDEX_BASE.get(index, None)
+            if not base:
+                self.__postText("E[?]: Invalid base of a number.")
+
+            data = [ord(item) for item in data]
+            text = bytesToString(data, base, self.checkBoxLeadingZeroes.isChecked())
+
+            INDEX_FORMAT = {0: "B", 1: "O", 2: "D", 3: "H"}
+            dataFormat = INDEX_FORMAT.get(index, None)
+            if not dataFormat:
+                self.__postText("E[?]: Invalid data format.")
+
+        self.__postText("R[%s:%s]: %s" % (dataFormat, len(data), text))
+
+    def onCheckBoxRawTextStateChanged(self, state):
+        if state == Qt.Checked:
+            self.labelFormat.setEnabled(False)
+            self.comboBoxFormat.setEnabled(False)
+            self.checkBoxLeadingZeroes.setEnabled(False)
+        else:
+            self.labelFormat.setEnabled(True)
+            self.comboBoxFormat.setEnabled(True)
+            self.checkBoxLeadingZeroes.setEnabled(True)
+
+    def onPushButtonConnectDisconnectClicked(self):
+        state = self.tcpClient.state()
+        if QTcpSocket.ConnectedState == state:
+            self.tcpClient.disconnectFromHost()
+        elif QTcpSocket.UnconnectedState == state:
+            host = self.lineEditHost.text()
+            port = self.spinBoxPort.value()
+            self.tcpClient.connectToHost(host, port)
+
+    def onPushButtonSendClicked(self):
+        text = self.lineEditData.text().simplified()
+        if text.isEmpty():
+            return
+
+        data = QByteArray()
+
+        if self.checkBoxRawText.isChecked():
+            dataFormat = "S"
+            data = text.toLocal8Bit()
+
+        else:
+            INDEX_BASE = {0: 2, 1: 8, 2: 10, 3: 16}
+            index = self.comboBoxFormat.currentIndex()
+            base = INDEX_BASE.get(index, None)
+            if not base:
+                self.__postText("E[?]: Invalid base of a number.")
+
+            try:
+                values = stringToBytes(str(text), base)
+            except ValueError as error:
+                self.__postText("E[?]: Incorrect input: <%s>." % error)
+
+            for value in values:
+                data.append(chr(value))
+
+            INDEX_FORMAT = {0: "B", 1: "O", 2: "D", 3: "H"}
+            dataFormat = INDEX_FORMAT.get(index, None)
+            if not dataFormat:
+                self.__postText("E[?]: Invalid data format.")
+
+        self.__postText("T[%s:%s]: %s" % (dataFormat, len(data), text))
+        self.tcpClient.write(data)
