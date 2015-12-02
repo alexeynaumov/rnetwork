@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt4.QtNetwork import QTcpSocket, QTcpServer
+from PyQt4.QtNetwork import QTcpSocket, QTcpServer, QAbstractSocket
 
 
 class TcpError(object):
@@ -237,9 +237,12 @@ class TcpServer(QTcpServer):
         defined, and then the descriptor is passed to __on_disconnected callback.
         :return: None
         '''
+
         if self.__on_disconnected:
             socket = self.sender()
             descriptor = socket.socketDescriptor()
+            if -1 == descriptor:
+                return
             del self.__clients[descriptor]
             self.__on_disconnected(descriptor)
 
@@ -250,6 +253,15 @@ class TcpServer(QTcpServer):
         :param error:
         :return: None
         '''
+
+        # if the remote host closes the connection
+        if QAbstractSocket.RemoteHostClosedError == error:  # RemoteHostClosedError error occurs
+            if self.__on_disconnected:
+                socket = self.sender()
+                descriptor = socket.socketDescriptor()
+                del self.__clients[descriptor]
+                self.__on_disconnected(descriptor)
+            return
 
         if self.__on_error:
             socket = self.sender()
