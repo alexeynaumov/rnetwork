@@ -18,6 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from PyQt4.QtCore import QString
+from collections import deque
 
 
 def bytesToString(intList, base=10, pad=False):
@@ -98,3 +99,41 @@ def stringToBytes(intStr, base=10, delimiter=" "):
         intList.append(value)
 
     return intList
+
+
+class History(object):
+    def __init__(self):
+        self.__previous = deque()
+        self.__next = deque()
+
+    def __str__(self):
+        values = []
+        for value in self.__previous:
+            values.append(value)
+
+        for value in self.__next:
+            values.append(value)
+
+        return " ".join([str(value) for value in values])
+
+    def add(self, value):
+        self.__previous.extend(self.__next)
+        self.__previous.append(value)
+        self.__next.clear()
+
+    def previous(self):
+
+        if self.__previous:
+            value = self.__previous.pop()
+            self.__next.appendleft(value)
+            return value
+        else:
+            return None
+
+    def next(self):
+        if self.__next:
+            value = self.__next.popleft()
+            self.__previous.append(value)
+            return value
+        else:
+            return None
