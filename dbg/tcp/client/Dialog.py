@@ -17,13 +17,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt4.QtCore import QByteArray, QTime, QSettings, Qt
+from PyQt4.QtCore import QByteArray, QTime, QSettings, Qt, SIGNAL
+from PyQt4.QtCore import QObject
 from PyQt4.QtGui import QDialog, QIcon
 from PyQt4.QtNetwork import QTcpSocket
 
 from rnetwork.tcp import TcpClient
 from dbg.tcp.client.ui_Dialog import Ui_Dialog
-from rnetwork.helpers import stringToBytes, bytesToString
+from rnetwork.helpers import stringToBytes, bytesToString, History
 
 
 class Dialog(QDialog, Ui_Dialog):
@@ -45,8 +46,25 @@ class Dialog(QDialog, Ui_Dialog):
         self.pushButtonConnectDisconnect.clicked.connect(self.onPushButtonConnectDisconnectClicked)
         self.pushButtonSend.clicked.connect(self.onPushButtonSendClicked)
         self.checkBoxRawText.stateChanged.connect(self.onCheckBoxRawTextStateChanged)
+        QObject.connect(self.lineEditData, SIGNAL("keyPressed"), self.__keyPressed)
+
+        self.__history = History()
 
         self.__loadSettings()
+
+    def __keyPressed(self, key):
+        if key in [Qt.Key_Enter, Qt.Key_Return]:
+            self.pushButtonSend.click()
+
+        if Qt.Key_Up == key:
+            previous = self.__history.previous()
+            if previous:
+                self.lineEditData.setText(previous)
+
+        if Qt.Key_Down == key:
+            next = self.__history.next()
+            if next:
+                self.lineEditData.setText(next)
 
     def __postText(self, text):
         if self.checkBoxTimestamp.isChecked():
@@ -166,3 +184,6 @@ class Dialog(QDialog, Ui_Dialog):
 
         self.__postText("T[%s:%s]: %s" % (dataFormat, len(data), text))
         self.tcpClient.write(data)
+
+        self.__history.add(self.lineEditData.text())
+        self.lineEditData.clear()

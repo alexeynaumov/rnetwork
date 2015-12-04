@@ -21,13 +21,10 @@
 
 import sys
 import os
-from dbg.tcp.client.Dialog import Dialog
-
 sys.path.append(os.path.abspath("../../"))
 
-
 from PyQt4.QtGui import QApplication
-
+from dbg.tcp.client.Dialog import Dialog
 
 def main():
     application = QApplication(sys.argv)

@@ -8,6 +8,7 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt4 import QtCore, QtGui
+from dbg.tcp.widgets.LineEdit import LineEdit
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -38,7 +39,7 @@ class Ui_Dialog(object):
         self.verticalLayout_2.addWidget(self.textEditTraffic)
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
-        self.lineEditData = QtGui.QLineEdit(Dialog)
+        self.lineEditData = LineEdit(Dialog)
         self.lineEditData.setEnabled(False)
         self.lineEditData.setObjectName(_fromUtf8("lineEditData"))
         self.horizontalLayout.addWidget(self.lineEditData)

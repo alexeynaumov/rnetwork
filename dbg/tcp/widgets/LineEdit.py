@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 # -*- coding: utf-8 -*-
 
 # Copyright (C) 2015 Alexey Naumov <rocketbuzzz@gmail.com>
@@ -19,20 +17,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-import os
-sys.path.append(os.path.abspath("../../"))
+from PyQt4.QtCore import Qt, SIGNAL
+from PyQt4.QtGui import QLineEdit
 
-from PyQt4.QtGui import QApplication
-from dbg.tcp.server.Dialog import Dialog
 
-def main():
-    application = QApplication(sys.argv)
+class LineEdit(QLineEdit):
+    def __init__(self, parent=None):
+        QLineEdit.__init__(self, parent)
 
-    client = Dialog()
-    client.show()
+    def keyPressEvent(self, event):
+        key = event.key()
 
-    sys.exit(application.exec_())
+        if key in [Qt.Key_Return, Qt.Key_Enter, Qt.Key_Up, Qt.Key_Down]:
+            self.emit(SIGNAL("keyPressed"), key)
 
-if __name__ == "__main__":
-    main()
+        QLineEdit.keyPressEvent(self, event)
