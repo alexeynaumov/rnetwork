@@ -49,7 +49,7 @@ class TcpClient(QTcpSocket):
     TCP/IP client class.
 
     Usage:
-        1: initialization:
+        1: create and initialize a new instance:
             self.tcpClient = TcpClient()
             self.tcpClient.onConnected = onConnected
             self.tcpClient.onDisconnected = onDisconnected
@@ -75,7 +75,7 @@ class TcpClient(QTcpSocket):
                 Writes data and returns the number of bytes that were actually written, or -1 if an error occurred.
 
         7: check connection state:
-            ???
+            Check the state of the client's socket when needed.
     '''
 
     def __init__(self):
@@ -160,7 +160,7 @@ class TcpServer(QTcpServer):
     TCP/IP server class.
 
     Usage:
-        1: Create and initialization a new instance:
+        1: create and initialize a new instance:
             self.tcpServer = TcpServer()
             self.tcpServer.onConnected = self.onConnected
             self.tcpServer.onDisconnected = self.onDisconnected
@@ -184,7 +184,8 @@ class TcpServer(QTcpServer):
 
         7: write data:
             self.tcpClient.write(descriptor(int), data(QByteArray)) -> int
-                Writes data to the socket with the given descriptor and returns the number of bytes that were actually written, or -1 if an error occurred.
+                Writes data to the socket with the given descriptor and returns the number of bytes that were actually
+                written, or -1 if an error occurred.
 
         8: close the server:
             self.tcpServer.close()
@@ -207,8 +208,8 @@ class TcpServer(QTcpServer):
     # Slots
     def __onNewConnection(self):
         '''
-        The slot is called every time a new connection to a client is available. The client's socket and its descriptor
-        are defined, and then the descriptor is passed to __onConnected callback.
+        The slot is called every time a client connects to the server. The client's socket and its descriptor are
+        defined, and then the descriptor is passed to __onConnected callback.
         :return: None
         '''
 
@@ -222,9 +223,8 @@ class TcpServer(QTcpServer):
 
     def __onConnected(self, descriptor):
         '''
-        The slot is called when a new connection to a client with the given descriptor has been successfully
-        established.
-        :param descriptor: (int), client's descriptor
+        If the callback is set, the client's socket descriptor is passed to it for further processing.
+        :param descriptor: (int), t's descriptor
         :return: None
         '''
 
@@ -233,34 +233,36 @@ class TcpServer(QTcpServer):
 
     def __onDisconnected(self):
         '''
-        The slot is called when the connection to a client is closed. The client's socket and its descriptor are
-        defined, and then the descriptor is passed to __on_disconnected callback.
+        The slot is called when a connected client disconnects from the server. The client's socket and its descriptor
+        are defined, and then the descriptor is passed to __on_disconnected callback.
         :return: None
         '''
 
         if self.__on_disconnected:
             socket = self.sender()
             descriptor = socket.socketDescriptor()
-            if -1 == descriptor:
+            if -1 == descriptor:  # Should do the double check if we get the descriptor right.
                 return
             del self.__clients[descriptor]
             self.__on_disconnected(descriptor)
 
     def __onError(self, error):
         '''
-        The slot is called when an error occurs. The socket's descriptor as long as error code and its description are
-        defined and passed to __on_error callback.
+        The slot is called when an error occurs. The socket's descriptor with error code and its description are defined
+        and passed to __on_error callback.
         :param error:
         :return: None
         '''
 
-        # if the remote host closes the connection
-        if QAbstractSocket.RemoteHostClosedError == error:  # RemoteHostClosedError error occurs
+        # if the remote host intentionally closes the connection
+        if QAbstractSocket.RemoteHostClosedError == error:  # the RemoteHostClosedError error occurs
             if self.__on_disconnected:
-                socket = self.sender()
-                descriptor = socket.socketDescriptor()
+                socket = self.sender()  # find out the client's socket
+                descriptor = socket.socketDescriptor()  # and its descriptor
                 del self.__clients[descriptor]
-                self.__on_disconnected(descriptor)
+                self.__on_disconnected(descriptor)  # to pass the descriptor to __on_disconnected callback
+                # In case we try to find out the client's socket descriptor when the client already disconnected (e.g.
+                # in __onDisconnected slot), we get descriptor=-1 that what is not what we need.
             return
 
         if self.__on_error:

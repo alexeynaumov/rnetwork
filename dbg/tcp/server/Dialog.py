@@ -17,12 +17,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt4.QtCore import Qt, QByteArray, QTime, QSettings, QObject, SIGNAL
+from PyQt4.QtCore import Qt, QObject, QByteArray, QTime, QSettings, SIGNAL
 from PyQt4.QtGui import QDialog, QIcon
 from PyQt4.QtNetwork import QHostAddress
 
-from rnetwork.helpers import stringToBytes, bytesToString, History
 from rnetwork.tcp import TcpServer
+from rnetwork.helpers import stringToBytes, bytesToString, History
 from dbg.tcp.server.ui_Dialog import Ui_Dialog
 
 
@@ -36,11 +36,11 @@ class Dialog(QDialog, Ui_Dialog):
     def __initialize(self):
         self.setWindowIcon(QIcon("./server/icons/server.svg"))
 
-        self.tcpServer = TcpServer()
-        self.tcpServer.onConnected = self.onConnected
-        self.tcpServer.onDisconnected = self.onDisconnected
-        self.tcpServer.onError = self.onError
-        self.tcpServer.onRead = self.onRead
+        self.__tcpServer = TcpServer()
+        self.__tcpServer.onConnected = self.onConnected
+        self.__tcpServer.onDisconnected = self.onDisconnected
+        self.__tcpServer.onError = self.onError
+        self.__tcpServer.onRead = self.onRead
 
         self.pushButtonStartStop.clicked.connect(self.onPushButtonStartStopClicked)
         self.pushButtonSend.clicked.connect(self.onPushButtonSendClicked)
@@ -49,7 +49,6 @@ class Dialog(QDialog, Ui_Dialog):
         QObject.connect(self.lineEditData, SIGNAL("keyPressed"), self.__keyPressed)
 
         self.__history = History()
-
         self.__loadSettings()
 
     def __keyPressed(self, key):
@@ -74,7 +73,7 @@ class Dialog(QDialog, Ui_Dialog):
             self.textEditTraffic.append(text)
 
     def __saveSettings(self):
-        settings = QSettings("Rocket Labs", "tdbg-server")
+        settings = QSettings("Rocket Labs", "tdbgs")
         settings.setValue("port", self.spinBoxPort.value())
         settings.setValue("format", self.comboBoxFormat.currentIndex())
         settings.setValue("leadingZeroes", self.checkBoxLeadingZeroes.isChecked())
@@ -82,7 +81,7 @@ class Dialog(QDialog, Ui_Dialog):
         settings.setValue("rawText", self.checkBoxRawText.isChecked())
 
     def __loadSettings(self):
-        settings = QSettings("Rocket Labs", "tdbg-server")
+        settings = QSettings("Rocket Labs", "tdbgs")
         self.spinBoxPort.setValue(settings.value("port", 80).toInt()[0])
         self.comboBoxFormat.setCurrentIndex(settings.value("format", 0).toInt()[0])
         self.checkBoxLeadingZeroes.setChecked(settings.value("leadingZeroes", False).toBool())
@@ -90,6 +89,7 @@ class Dialog(QDialog, Ui_Dialog):
         self.checkBoxRawText.setChecked(settings.value("rawText", False).toBool())
 
     def closeEvent(self, event):
+        self.__tcpServer.close()
         self.__saveSettings()
         super(Dialog, self).closeEvent(event)
 
@@ -142,20 +142,21 @@ class Dialog(QDialog, Ui_Dialog):
     def onListWidgetClientsItemClicked(self):
         item = self.listWidgetClients.currentItem()
         descriptor = int(item.text())
-        socket = self.tcpServer.socket(descriptor)
+        socket = self.__tcpServer.socket(descriptor)
         if socket:
             self.lineEditPeerAddress.setText(socket.peerAddress().toString())
 
     def onPushButtonStartStopClicked(self):
-        if self.tcpServer.isListening():
-            self.tcpServer.close()
+        if self.__tcpServer.isListening():
+            self.__tcpServer.close()
             self.pushButtonStartStop.setText("Start")
             self.textEditTraffic.setEnabled(False)
             self.lineEditData.setEnabled(False)
             self.pushButtonSend.setEnabled(False)
+            self.listWidgetClients.clear()
         else:
             port = self.spinBoxPort.value()
-            self.tcpServer.listen(QHostAddress.Any, port)
+            self.__tcpServer.listen(QHostAddress.Any, port)
             self.pushButtonStartStop.setText("Stop")
             self.textEditTraffic.setEnabled(True)
             self.lineEditData.setEnabled(True)
@@ -200,7 +201,7 @@ class Dialog(QDialog, Ui_Dialog):
         for item in selectedSockets:
             descriptor = int(item.text())
             self.__postText("T[%s:%s#%s]: %s" % (dataFormat, len(data), descriptor, text))
-            self.tcpServer.write(descriptor, data)
+            self.__tcpServer.write(descriptor, data)
 
         self.__history.add(self.lineEditData.text())
         self.lineEditData.clear()

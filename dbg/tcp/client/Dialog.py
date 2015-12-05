@@ -17,14 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt4.QtCore import QByteArray, QTime, QSettings, Qt, SIGNAL
-from PyQt4.QtCore import QObject
+from PyQt4.QtCore import Qt, QObject, QByteArray, QTime, QSettings, SIGNAL
 from PyQt4.QtGui import QDialog, QIcon
 from PyQt4.QtNetwork import QTcpSocket
 
 from rnetwork.tcp import TcpClient
-from dbg.tcp.client.ui_Dialog import Ui_Dialog
 from rnetwork.helpers import stringToBytes, bytesToString, History
+from dbg.tcp.client.ui_Dialog import Ui_Dialog
 
 
 class Dialog(QDialog, Ui_Dialog):
@@ -37,11 +36,11 @@ class Dialog(QDialog, Ui_Dialog):
     def __initialize(self):
         self.setWindowIcon(QIcon("./client/icons/client.svg"))
 
-        self.tcpClient = TcpClient()
-        self.tcpClient.onConnected = self.onConnected
-        self.tcpClient.onDisconnected = self.onDisconnected
-        self.tcpClient.onError = self.onError
-        self.tcpClient.onRead = self.onRead
+        self.__tcpClient = TcpClient()
+        self.__tcpClient.onConnected = self.onConnected
+        self.__tcpClient.onDisconnected = self.onDisconnected
+        self.__tcpClient.onError = self.onError
+        self.__tcpClient.onRead = self.onRead
 
         self.pushButtonConnectDisconnect.clicked.connect(self.onPushButtonConnectDisconnectClicked)
         self.pushButtonSend.clicked.connect(self.onPushButtonSendClicked)
@@ -49,7 +48,6 @@ class Dialog(QDialog, Ui_Dialog):
         QObject.connect(self.lineEditData, SIGNAL("keyPressed"), self.__keyPressed)
 
         self.__history = History()
-
         self.__loadSettings()
 
     def __keyPressed(self, key):
@@ -74,7 +72,7 @@ class Dialog(QDialog, Ui_Dialog):
             self.textEditTraffic.append(text)
 
     def __saveSettings(self):
-        settings = QSettings("Rocket Labs", "tdbg-client")
+        settings = QSettings("Rocket Labs", "tdbgc")
         settings.setValue("host", self.lineEditHost.text())
         settings.setValue("port", self.spinBoxPort.value())
         settings.setValue("format", self.comboBoxFormat.currentIndex())
@@ -83,7 +81,7 @@ class Dialog(QDialog, Ui_Dialog):
         settings.setValue("rawText", self.checkBoxRawText.isChecked())
 
     def __loadSettings(self):
-        settings = QSettings("Rocket Labs", "tdbg-client")
+        settings = QSettings("Rocket Labs", "tdbgc")
         self.lineEditHost.setText(settings.value("host", "localhost").toString())
         self.spinBoxPort.setValue(settings.value("port", 80).toInt()[0])
         self.comboBoxFormat.setCurrentIndex(settings.value("format", 0).toInt()[0])
@@ -92,6 +90,7 @@ class Dialog(QDialog, Ui_Dialog):
         self.checkBoxRawText.setChecked(settings.value("rawText", False).toBool())
 
     def closeEvent(self, event):
+        self.__tcpClient.close()
         self.__saveSettings()
         super(Dialog, self).closeEvent(event)
 
@@ -143,13 +142,13 @@ class Dialog(QDialog, Ui_Dialog):
             self.checkBoxLeadingZeroes.setEnabled(True)
 
     def onPushButtonConnectDisconnectClicked(self):
-        state = self.tcpClient.state()
+        state = self.__tcpClient.state()
         if QTcpSocket.ConnectedState == state:
-            self.tcpClient.disconnectFromHost()
+            self.__tcpClient.disconnectFromHost()
         elif QTcpSocket.UnconnectedState == state:
             host = self.lineEditHost.text()
             port = self.spinBoxPort.value()
-            self.tcpClient.connectToHost(host, port)
+            self.__tcpClient.connectToHost(host, port)
 
     def onPushButtonSendClicked(self):
         text = self.lineEditData.text().simplified()
@@ -183,7 +182,7 @@ class Dialog(QDialog, Ui_Dialog):
                 self.__postText("E[?]: Invalid data format.")
 
         self.__postText("T[%s:%s]: %s" % (dataFormat, len(data), text))
-        self.tcpClient.write(data)
+        self.__tcpClient.write(data)
 
         self.__history.add(self.lineEditData.text())
         self.lineEditData.clear()

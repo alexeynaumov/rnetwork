@@ -67,7 +67,7 @@ class Ui_Dialog(object):
         font.setBold(True)
         font.setWeight(75)
         self.pushButtonSend.setFont(font)
-        self.pushButtonSend.setAutoDefault(True)
+        self.pushButtonSend.setAutoDefault(False)
         self.pushButtonSend.setObjectName(_fromUtf8("pushButtonSend"))
         self.horizontalLayout.addWidget(self.pushButtonSend)
         self.verticalLayout.addLayout(self.horizontalLayout)

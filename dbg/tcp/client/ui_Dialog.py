@@ -2,7 +2,7 @@
 
 # Form implementation generated from reading ui file 'Dialog.ui'
 #
-# Created: Sun Nov 29 15:22:34 2015
+# Created: Sat Dec  5 02:42:57 2015
 #      by: PyQt4 UI code generator 4.11.3
 #
 # WARNING! All changes made in this file will be lost!
@@ -49,6 +49,7 @@ class Ui_Dialog(object):
         font.setBold(True)
         font.setWeight(75)
         self.pushButtonSend.setFont(font)
+        self.pushButtonSend.setAutoDefault(False)
         self.pushButtonSend.setObjectName(_fromUtf8("pushButtonSend"))
         self.horizontalLayout.addWidget(self.pushButtonSend)
         self.verticalLayout_2.addLayout(self.horizontalLayout)
