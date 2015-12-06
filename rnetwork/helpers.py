@@ -62,7 +62,7 @@ def bytesToString(intList, base=10, pad=False):
 
         intStr += value + " "
 
-    return intStr
+    return intStr.strip()
 
 
 def stringToBytes(intStr, base=10, delimiter=" "):
