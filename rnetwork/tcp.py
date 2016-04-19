@@ -16,6 +16,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from PyQt4.QtCore import QObject
 
 from PyQt4.QtNetwork import QTcpSocket, QTcpServer, QAbstractSocket
 
@@ -43,7 +44,7 @@ class TcpError:
             self.code = code
             self.description = description
 
-class TcpClient:
+class TcpClient(QObject):
     '''
     TCP/IP client class.
 
@@ -78,6 +79,7 @@ class TcpClient:
     '''
 
     def __init__(self, parent=None):
+        QObject.__init__(self, parent)
         self.__socket = QTcpSocket(parent)
 
         # Callbacks
@@ -98,7 +100,7 @@ class TcpClient:
         The slot is called when connection to the specified host has been successfully established.
         :return: None
         '''
-    
+
         if self.__on_connected:
             self.__on_connected()
 
@@ -107,7 +109,7 @@ class TcpClient:
         The slot is called when the connection to the host is closed.
         :return: None
         '''
-        
+
         if self.__on_disconnected:
             self.__on_disconnected()
 
@@ -170,7 +172,7 @@ class TcpClient:
     onRead = property(fset=__read)
 
 
-class TcpServer(QTcpServer):
+class TcpServer(QObject):
     '''
     TCP/IP server class.
 
@@ -207,8 +209,7 @@ class TcpServer(QTcpServer):
     '''
 
     def __init__(self, parent=None):
-        QTcpServer.__init__(self, parent)
-
+        self.__server = QTcpServer(parent)
         self.__clients = dict()  # All active clients
 
         # Callbacks
@@ -218,7 +219,7 @@ class TcpServer(QTcpServer):
         self.__on_read = None
 
         # Signals and slots connections
-        self.newConnection.connect(self.__onNewConnection)
+        self.__server.newConnection.connect(self.__onNewConnection)
 
     # Slots
     def __onNewConnection(self):
@@ -228,7 +229,7 @@ class TcpServer(QTcpServer):
         :return: None
         '''
 
-        socket = self.nextPendingConnection()
+        socket = self.__server.nextPendingConnection()
         socket.disconnected.connect(self.__onDisconnected)
         socket.error.connect(self.__onError)
         socket.readyRead.connect(self.__onReadyRead)
@@ -254,7 +255,7 @@ class TcpServer(QTcpServer):
         '''
 
         if self.__on_disconnected:
-            socket = self.sender()
+            socket = self.__server.sender()
             descriptor = socket.socketDescriptor()
             if -1 == descriptor:  # Should do the double check if we get the descriptor right.
                 return
@@ -272,16 +273,16 @@ class TcpServer(QTcpServer):
         # if the remote host intentionally closes the connection
         if QAbstractSocket.RemoteHostClosedError == error:  # the RemoteHostClosedError error occurs
             if self.__on_disconnected:
-                socket = self.sender()  # find out the client's socket
+                socket = self.__server.sender()  # find out the client's socket
                 descriptor = socket.socketDescriptor()  # and its descriptor
                 del self.__clients[descriptor]
                 self.__on_disconnected(descriptor)  # to pass the descriptor to __on_disconnected callback
                 # In case we try to find out the client's socket descriptor when the client already disconnected (e.g.
-                # in __onDisconnected slot), we get descriptor=-1 that what is not what we need.
+                # in __onDisconnected slot), we get descriptor=-1 that is not what we need.
             return
 
         if self.__on_error:
-            socket = self.sender()
+            socket = self.__server.sender()
             descriptor = socket.socketDescriptor()
 
             tcpError = TcpError()
@@ -297,7 +298,7 @@ class TcpServer(QTcpServer):
         :return: None
         '''
         if self.__on_read:
-            socket = self.sender()
+            socket = self.__server.sender()
             descriptor = socket.socketDescriptor()
             data = socket.readAll()
             self.__on_read(descriptor, data)
@@ -316,6 +317,12 @@ class TcpServer(QTcpServer):
         self.__on_read = callback
 
     # Methods
+    def isListening(self):
+        return self.__server.isListening()
+
+    def listen(self, hostAddressAddress=None, port=0):
+        self.__server.listen(hostAddressAddress, port)
+
     def socket(self, descriptor):
         '''
         Return socket with the given descriptor or None if it is not found.
@@ -371,7 +378,7 @@ class TcpServer(QTcpServer):
         for socket in self.__clients.values():
             socket.close()
 
-        super(TcpServer, self).close()
+        self.__server.close()
 
     # Properties
     onConnected = property(fset=__connected)

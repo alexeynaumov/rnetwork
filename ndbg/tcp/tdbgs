@@ -20,11 +20,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import sys
-import os
-sys.path.append(os.path.abspath("../../"))
-
 from PyQt4.QtGui import QApplication
-from dbg.tcp.server.Dialog import Dialog
+from server.Dialog import Dialog
+
 
 def main():
     application = QApplication(sys.argv)

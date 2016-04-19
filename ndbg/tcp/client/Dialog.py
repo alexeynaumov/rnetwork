@@ -54,6 +54,7 @@ class Dialog(QDialog, Ui_Dialog):
         self.__history = History()
         self.__loadSettings()
 
+
     def __keyPressed(self, key):
         if key in [Qt.Key_Enter, Qt.Key_Return]:
             self.pushButtonSend.click()
@@ -99,6 +100,7 @@ class Dialog(QDialog, Ui_Dialog):
         super(Dialog, self).closeEvent(event)
 
     def onConnected(self):
+
         self.textEditTraffic.setEnabled(True)
         self.lineEditData.setEnabled(True)
         self.pushButtonSend.setEnabled(True)
