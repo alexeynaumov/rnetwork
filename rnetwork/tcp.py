@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2015 Alexey Naumov <rocketbuzzz@gmail.com>
+# Copyright (C) 2015-2016 Alexey Naumov <rocketbuzzz@gmail.com>
 #
 # This file is part of rnetwork.
 #
@@ -20,7 +20,7 @@
 from PyQt4.QtNetwork import QTcpSocket, QTcpServer, QAbstractSocket
 
 
-class TcpError(object):
+class TcpError:
     '''
     TCP/IP error description class.
     '''
@@ -43,20 +43,19 @@ class TcpError(object):
             self.code = code
             self.description = description
 
-
-class TcpClient(QTcpSocket):
+class TcpClient:
     '''
     TCP/IP client class.
 
     Usage:
         1: create and initialize a new instance:
-            self.tcpClient = TcpClient()
-            self.tcpClient.onConnected = onConnected
-            self.tcpClient.onDisconnected = onDisconnected
-            self.tcpClient.onError = onError
-            self.tcpClient.onRead = onRead
+            tcpClient = TcpClient()
+            tcpClient.onConnected = onConnected
+            tcpClient.onDisconnected = onDisconnected
+            tcpClient.onError = onError
+            tcpClient.onRead = onRead
 
-            self.tcpClient.connectToHost(host(str), port(int))
+            tcpClient.connectToHost(host(str), port(int))
 
         2: onConnected() callback:
             Connection to the server has been established stuff.
@@ -78,8 +77,8 @@ class TcpClient(QTcpSocket):
             Check the state of the client's socket when needed.
     '''
 
-    def __init__(self):
-        QTcpSocket.__init__(self)
+    def __init__(self, parent=None):
+        self.__socket = QTcpSocket(parent)
 
         # Callbacks
         self.__on_connected = None
@@ -88,10 +87,10 @@ class TcpClient(QTcpSocket):
         self.__on_read = None
 
         # Signals and slots connections
-        self.connected.connect(self.__onConnected)
-        self.disconnected.connect(self.__onDisconnected)
-        self.error.connect(self.__onError)
-        self.readyRead.connect(self.__onReadyRead)
+        self.__socket.connected.connect(self.__onConnected)
+        self.__socket.disconnected.connect(self.__onDisconnected)
+        self.__socket.error.connect(self.__onError)
+        self.__socket.readyRead.connect(self.__onReadyRead)
 
     # Slots
     def __onConnected(self):
@@ -133,7 +132,7 @@ class TcpClient(QTcpSocket):
         '''
 
         if self.__on_read:
-            self.__on_read(self.readAll())
+            self.__on_read(self.__socket.readAll())
 
     # Setters
     def __connected(self, callback):
@@ -147,6 +146,22 @@ class TcpClient(QTcpSocket):
 
     def __read(self, callback):
         self.__on_read = callback
+
+    # Interface
+    def connectToHost(self, host, port):
+        self.__socket.connectToHost(host, port)
+
+    def disconnectFromHost(self):
+        self.__socket.disconnectFromHost()
+
+    def close(self):
+        self.__socket.close()
+
+    def state(self):
+        return self.__socket.state()
+
+    def write(self, data):
+        return self.__socket.write(data)
 
     # Properties
     onConnected = property(fset=__connected)

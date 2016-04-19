@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2015 Alexey Naumov <rocketbuzzz@gmail.com>
+# Copyright (C) 2015-2016 Alexey Naumov <rocketbuzzz@gmail.com>
 #
 # This file is part of rnetwork.
 #
