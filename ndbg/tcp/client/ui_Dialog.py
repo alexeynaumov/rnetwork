@@ -8,7 +8,7 @@
 # WARNING! All changes made in this file will be lost!
 
 from PyQt4 import QtCore, QtGui
-from ndbg.tcp.widgets.LineEdit import LineEdit
+from rhelpers.widgets import LineEdit
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
