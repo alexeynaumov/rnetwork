@@ -2,7 +2,7 @@
 
 # -*- coding: utf-8 -*-
 
-# Copyright (C) 2015 Alexey Naumov <rocketbuzzz@gmail.com>
+# Copyright (C) 2015-2016 Alexey Naumov <rocketbuzzz@gmail.com>
 #
 # This file is part of rnetwork.
 #
@@ -19,12 +19,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-import os
-sys.path.append(os.path.abspath("../../"))
+import sys, os
+sys.path.append(os.path.abspath("../"))
 
 from PyQt4.QtGui import QApplication
-from dbg.tcp.client.Dialog import Dialog
+from tcp.client.Dialog import Dialog
 
 def main():
     application = QApplication(sys.argv)

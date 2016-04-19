@@ -17,13 +17,17 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import sys, os
+sys.path.append(os.path.abspath("../../"))
+sys.path.append(os.path.abspath("../../../rhelpers/"))
+
 from PyQt4.QtCore import Qt, QObject, QByteArray, QTime, QSettings, SIGNAL
 from PyQt4.QtGui import QDialog, QIcon
 from PyQt4.QtNetwork import QTcpSocket
 
 from rnetwork.tcp import TcpClient
-from rnetwork.helpers import stringToBytes, bytesToString, History
-from dbg.tcp.client.ui_Dialog import Ui_Dialog
+from rhelpers.utils import stringToBytes, bytesToString, History
+from ndbg.tcp.client.ui_Dialog import Ui_Dialog
 
 
 class Dialog(QDialog, Ui_Dialog):
