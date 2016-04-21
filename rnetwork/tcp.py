@@ -209,6 +209,7 @@ class TcpServer(QObject):
     '''
 
     def __init__(self, parent=None):
+        QObject.__init__(self, parent)
         self.__server = QTcpServer(parent)
         self.__clients = dict()  # All active clients
 
