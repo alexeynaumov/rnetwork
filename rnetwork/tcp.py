@@ -16,9 +16,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from PyQt4.QtCore import QObject
 
-from PyQt4.QtNetwork import QTcpSocket, QTcpServer, QAbstractSocket
+from PyQt4.QtCore import QObject, QString
+from PyQt4.QtNetwork import QAbstractSocket, QTcpSocket, QTcpServer
 
 
 class TcpError:
@@ -31,8 +31,8 @@ class TcpError:
 
     def __init__(self, code=None, description=None):
         '''
-        :param code: (int), error code
-        :param description: (str), error description
+        :param code(int): error code;
+        :param description(str): error description;
         :return: None
         '''
 
@@ -43,6 +43,7 @@ class TcpError:
         else:
             self.code = code
             self.description = description
+
 
 class TcpClient(QObject):
     '''
@@ -97,7 +98,8 @@ class TcpClient(QObject):
     # Slots
     def __onConnected(self):
         '''
-        The slot is called when connection to the specified host has been successfully established.
+        The slot is called when connection to the specified host has been successfully established. Then, if it is not
+        None, __on_connected callback is called.
         :return: None
         '''
 
@@ -106,7 +108,8 @@ class TcpClient(QObject):
 
     def __onDisconnected(self):
         '''
-        The slot is called when the connection to the host is closed.
+        The slot is called when the connection to the host is closed. Then, if it is not None, __on_disconnected
+        callback is called.
         :return: None
         '''
 
@@ -117,7 +120,7 @@ class TcpClient(QObject):
         '''
         The slot is called when an error occurs. The error code and description are defined and passed to __on_error
         callback.
-        :param error: (PyQt4.QtNetwork.SocketError) error code
+        :param error(PyQt4.QtNetwork.SocketError): error code;
         :return: None
         '''
         
@@ -129,12 +132,13 @@ class TcpClient(QObject):
 
     def __onReadyRead(self):
         '''
-        The slot is called every time new data is available for reading.
+        The slot is called when new data is available for reading from the socket. Then, all the available data
+        (of type string) is read from the socket and then passed to the __on_read callback (if it is not None).
         :return: None
         '''
 
         if self.__on_read:
-            self.__on_read(self.__socket.readAll())
+            self.__on_read(self.__socket.readAll().data())
 
     # Setters
     def __connected(self, callback):
@@ -149,27 +153,56 @@ class TcpClient(QObject):
     def __read(self, callback):
         self.__on_read = callback
 
-    # Interface
-    def connectToHost(self, host, port):
-        self.__socket.connectToHost(host, port)
-
-    def disconnectFromHost(self):
-        self.__socket.disconnectFromHost()
-
-    def close(self):
-        self.__socket.close()
-
-    def state(self):
-        return self.__socket.state()
-
-    def write(self, data):
-        return self.__socket.write(data)
-
     # Properties
     onConnected = property(fset=__connected)
     onDisconnected = property(fset=__disconnected)
     onError = property(fset=__error)
     onRead = property(fset=__read)
+
+    # Interface
+    def connectToHost(self, host, port):
+        '''
+        Attempt to make a connection to <hostName> on the given <port>.
+        :param host(str), remote host;
+        :param port(int), remote port;
+        :return: None
+        '''
+
+        self.__socket.connectToHost(QString(host), port)
+
+    def disconnectFromHost(self):
+        '''
+        Attempt to close the socket.
+        :return: None
+        '''
+
+        self.__socket.disconnectFromHost()
+
+    def close(self):
+        '''
+        Closes the I/O device for the socket, disconnects the socket's connection with the host, closes the socket, and
+        resets the name, address, port number and underlying socket descriptor.
+        :return: None
+        '''
+
+        self.__socket.close()
+
+    def state(self):
+        '''
+        Return the state of the socket.
+        :return: QAbstractSocket.SocketState, socket state
+        '''
+
+        return self.__socket.state()
+
+    def write(self, data):
+        '''
+        Write <data> to the socket.
+        :param data(str): outgoing data;
+        :return: int, the number of bytes that were actually written, or -1 if an error occurred
+        '''
+
+        return self.__socket.write(data)
 
 
 class TcpServer(QObject):
@@ -241,7 +274,7 @@ class TcpServer(QObject):
     def __onConnected(self, descriptor):
         '''
         If the callback is set, the client's socket descriptor is passed to it for further processing.
-        :param descriptor: (int), t's descriptor
+        :param descriptor (int): socket's descriptor;
         :return: None
         '''
 
@@ -258,7 +291,7 @@ class TcpServer(QObject):
         if self.__on_disconnected:
             socket = self.__server.sender()
             descriptor = socket.socketDescriptor()
-            if -1 == descriptor:  # Should do the double check if we get the descriptor right.
+            if -1 == descriptor:  # Should do the double check to make sure that we get the descriptor right.
                 return
             del self.__clients[descriptor]
             self.__on_disconnected(descriptor)
@@ -267,7 +300,7 @@ class TcpServer(QObject):
         '''
         The slot is called when an error occurs. The socket's descriptor with error code and its description are defined
         and passed to __on_error callback.
-        :param error:
+        :param error (QAbstractSocket.RemoteHostClosedError): socket error;
         :return: None
         '''
 
@@ -301,7 +334,7 @@ class TcpServer(QObject):
         if self.__on_read:
             socket = self.__server.sender()
             descriptor = socket.socketDescriptor()
-            data = socket.readAll()
+            data = socket.readAll().data()
             self.__on_read(descriptor, data)
 
     # Setters
@@ -319,16 +352,28 @@ class TcpServer(QObject):
 
     # Methods
     def isListening(self):
+        '''
+        Return true if the server is currently listening for incoming connections; otherwise returns false.
+        :return: bool
+        '''
+
         return self.__server.isListening()
 
-    def listen(self, hostAddressAddress=None, port=0):
-        self.__server.listen(hostAddressAddress, port)
+    def listen(self, address=None, port=0):
+        '''
+        Tell the server to listen for incoming connections on address address and port port. If port is 0, a port is
+        chosen automatically. If address is QHostAddress::Any, the server will listen on all network interfaces.
+        :param address(QHosAddress): address to listen to;
+        :param port(int): port to listen to;
+        :return: bool, return true on success; otherwise returns false
+        '''
+        self.__server.listen(address, port)
 
     def socket(self, descriptor):
         '''
         Return socket with the given descriptor or None if it is not found.
-        :param descriptor: (int), socket descriptor
-        :return: socket (QTcpSocket) or None
+        :param descriptor(int): socket descriptor;
+        :return: socket(QTcpSocket) or None
         '''
 
         return self.__clients.get(descriptor, None)
@@ -336,7 +381,7 @@ class TcpServer(QObject):
     def descriptors(self):
         '''
         Return all sockets' descriptors available.
-        :return list of int:
+        :return list of int
         '''
 
         return sorted(self.__clients.keys())
@@ -344,9 +389,9 @@ class TcpServer(QObject):
     def write(self, descriptor, data):
         '''
         Write data to the client's socket with the given descriptor.
-        :param descriptor: (int), client's socket descriptor
-        :param data: (QByteArray), data to be written
-        :return: (int), the number of bytes that were actually written, or -1 if an error occurred
+        :param descriptor(int): client's socket descriptor;
+        :param data(str), data to be written;
+        :return: int, the number of bytes that were actually written, or -1 if an error occurred
         '''
 
         socket = self.socket(descriptor)
@@ -360,7 +405,7 @@ class TcpServer(QObject):
     def disconnect(self, descriptor):
         '''
         Disconnect the client socket with the given descriptor.
-        :param descriptor: (int), client's socket descriptor
+        :param descriptor(int): client's socket descriptor;
         :return: None
         '''
 
