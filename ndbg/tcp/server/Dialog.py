@@ -30,6 +30,8 @@ from rnetwork.tcp import TcpServer
 from rhelpers.utils import stringToBytes, bytesToString, History
 from .ui_Dialog import Ui_Dialog
 
+ICON_SERVER = os.path.dirname(__file__) + "/icons/server.svg"
+
 
 class Dialog(QDialog, Ui_Dialog):
     def __init__(self, parent=None):
@@ -39,7 +41,7 @@ class Dialog(QDialog, Ui_Dialog):
         self.__initialize()
 
     def __initialize(self):
-        self.setWindowIcon(QIcon("./server/icons/server.svg"))
+        self.setWindowIcon(QIcon(ICON_SERVER))
 
         self.__tcpServer = TcpServer()
         self.__tcpServer.onConnected = self.onConnected
