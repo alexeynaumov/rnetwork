@@ -19,13 +19,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import sys
-import os
-from dbg.udp.Dialog import Dialog
-
+import sys, os
 sys.path.append(os.path.abspath("../../"))
-from PyQt4.QtGui import QApplication
 
+from PyQt4.QtGui import QApplication
+from ndbg.udp.Dialog import Dialog
 
 def main():
     application = QApplication(sys.argv)

@@ -17,50 +17,59 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+import re
 from PyQt4.QtCore import QObject
-from PyQt4.QtNetwork import QUdpSocket, QHostAddress
+from PyQt4.QtNetwork import QUdpSocket, QHostAddress, QNetworkInterface
 
 
 class UdpSocket(QObject):
     def __init__(self, parent=None):
         QObject.__init__(self, parent)
+
         self.__socket = QUdpSocket(self)
         self.__socket.readyRead.connect(self.__onReadyRead)
-        self.__port = None
+
         self.__on_read = None
+        self.__port = None
+
+        ips = []  # gel all the local IP-addresses
+        addresses = QNetworkInterface.allAddresses()
+        for address in addresses:
+
+            match = re.match("(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})", str(address.toString()))
+            if match:
+                ip = match.group(0)
+                if "127.0.0.1" == ip or "0.0.0.0" == ip:
+                    continue
+
+                ips.append(ip)
+
+        self.__ips = ips
 
     def __onReadyRead(self):
-        if not self.__on_read:
-            return
-
         while self.__socket.hasPendingDatagrams():
             size = self.__socket.pendingDatagramSize()
             data, host, port = self.__socket.readDatagram(size)
 
-            self.__on_read(data, host, port)
+            if str(host.toString()) in self.__ips:  # if the datagram comes from the local IP, we simply ignore it
+                return
 
-    def bind(self):
-        if not isinstance(self.__port, int):
-            raise Exception("Error setting port value.")
+            source = (str(host.toString()), port)
 
-        self.__socket.bind(QHostAddress.Broadcast, self.port)
+            if self.__on_read:
+                self.__on_read(source, data)
 
-    def write(self, data, host, port):
-        self.__socket.writeDatagram(data, host, port)
-        print self.__socket.state()
-
-    @property
-    def port(self):
-        return self.__port
-
-    @port.setter
-    def port(self, port):
-        self.__port = port
-
-    @property
-    def onRead(self):
-        return self.__on_read
-
-    @onRead.setter
-    def onRead(self, callback):
+    def __read(self, callback):
         self.__on_read = callback
+
+    def bind(self, port):
+        self.__port = port
+        self.__socket.bind(self.__port, QUdpSocket.ShareAddress)
+
+    def write(self, data):
+        if None == self.__port:
+            return -1
+
+        return self.__socket.writeDatagram(data, QHostAddress.Broadcast, self.__port)
+
+    onRead = property(fset=__read)

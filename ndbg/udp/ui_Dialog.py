@@ -2,12 +2,13 @@
 
 # Form implementation generated from reading ui file 'Dialog.ui'
 #
-# Created: Sun Feb 14 01:24:45 2016
+# Created: Sat Apr 23 19:54:11 2016
 #      by: PyQt4 UI code generator 4.10.4
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt4 import QtCore, QtGui
+from rhelpers.widgets import LineEdit
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -38,7 +39,7 @@ class Ui_Dialog(object):
         self.verticalLayout_2.addWidget(self.textEditTraffic)
         self.horizontalLayout = QtGui.QHBoxLayout()
         self.horizontalLayout.setObjectName(_fromUtf8("horizontalLayout"))
-        self.lineEditData = QtGui.QLineEdit(Dialog)
+        self.lineEditData = LineEdit(Dialog)
         self.lineEditData.setObjectName(_fromUtf8("lineEditData"))
         self.horizontalLayout.addWidget(self.lineEditData)
         self.pushButtonSend = QtGui.QPushButton(Dialog)
@@ -63,20 +64,20 @@ class Ui_Dialog(object):
         self.spinBoxPort.setMaximumSize(QtCore.QSize(160, 16777215))
         self.spinBoxPort.setMinimum(1)
         self.spinBoxPort.setMaximum(65535)
-        self.spinBoxPort.setProperty("value", 80)
+        self.spinBoxPort.setProperty("value", 49001)
         self.spinBoxPort.setObjectName(_fromUtf8("spinBoxPort"))
         self.gridLayout.addWidget(self.spinBoxPort, 2, 1, 1, 1)
-        self.pushButtonConnectDisconnect = QtGui.QPushButton(Dialog)
-        self.pushButtonConnectDisconnect.setMinimumSize(QtCore.QSize(160, 0))
-        self.pushButtonConnectDisconnect.setMaximumSize(QtCore.QSize(160, 16777215))
+        self.pushButtonBind = QtGui.QPushButton(Dialog)
+        self.pushButtonBind.setMinimumSize(QtCore.QSize(160, 0))
+        self.pushButtonBind.setMaximumSize(QtCore.QSize(160, 16777215))
         font = QtGui.QFont()
         font.setBold(True)
         font.setWeight(75)
-        self.pushButtonConnectDisconnect.setFont(font)
-        self.pushButtonConnectDisconnect.setAutoDefault(False)
-        self.pushButtonConnectDisconnect.setFlat(False)
-        self.pushButtonConnectDisconnect.setObjectName(_fromUtf8("pushButtonConnectDisconnect"))
-        self.gridLayout.addWidget(self.pushButtonConnectDisconnect, 3, 1, 1, 1)
+        self.pushButtonBind.setFont(font)
+        self.pushButtonBind.setAutoDefault(False)
+        self.pushButtonBind.setFlat(False)
+        self.pushButtonBind.setObjectName(_fromUtf8("pushButtonBind"))
+        self.gridLayout.addWidget(self.pushButtonBind, 3, 1, 1, 1)
         self.labelFormat = QtGui.QLabel(Dialog)
         font = QtGui.QFont()
         font.setBold(True)
@@ -108,8 +109,8 @@ class Ui_Dialog(object):
         self.retranslateUi(Dialog)
         self.comboBoxFormat.setCurrentIndex(2)
         QtCore.QMetaObject.connectSlotsByName(Dialog)
-        Dialog.setTabOrder(self.spinBoxPort, self.pushButtonConnectDisconnect)
-        Dialog.setTabOrder(self.pushButtonConnectDisconnect, self.lineEditData)
+        Dialog.setTabOrder(self.spinBoxPort, self.pushButtonBind)
+        Dialog.setTabOrder(self.pushButtonBind, self.lineEditData)
         Dialog.setTabOrder(self.lineEditData, self.pushButtonSend)
         Dialog.setTabOrder(self.pushButtonSend, self.comboBoxFormat)
         Dialog.setTabOrder(self.comboBoxFormat, self.checkBoxTimestamp)
@@ -119,7 +120,7 @@ class Ui_Dialog(object):
         Dialog.setWindowTitle(_translate("Dialog", "UDP debugger - 1.0.0", None))
         self.pushButtonSend.setText(_translate("Dialog", "Send", None))
         self.labelPort.setText(_translate("Dialog", "Port:", None))
-        self.pushButtonConnectDisconnect.setText(_translate("Dialog", "Connect", None))
+        self.pushButtonBind.setText(_translate("Dialog", "Bind", None))
         self.labelFormat.setText(_translate("Dialog", "Format:", None))
         self.comboBoxFormat.setItemText(0, _translate("Dialog", "Bin", None))
         self.comboBoxFormat.setItemText(1, _translate("Dialog", "Oct", None))

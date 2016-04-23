@@ -17,15 +17,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from PyQt4.QtCore import Qt, QObject, QByteArray, QTime, QSettings, SIGNAL
-from PyQt4.QtGui import QDialog, QIcon
-from PyQt4.QtNetwork import QTcpSocket, QHostAddress
-from dbg.udp.ui_Dialog import Ui_Dialog
+import sys, os
+sys.path.append(os.path.abspath("../../../rhelpers"))
+sys.path.append(os.path.abspath("../../../rnetwork"))
 
-from rnetwork.tcp import TcpClient
-from rnetwork.helpers import stringToBytes, bytesToString, History
+from PyQt4.QtCore import SIGNAL, Qt, QObject, QByteArray, QTime, QSettings
+from PyQt4.QtGui import QDialog, QIcon
 
 from rnetwork.udp import UdpSocket
+from rhelpers.utils import stringToBytes, bytesToString, History
+from .ui_Dialog import Ui_Dialog
+
+ROCKET_CLIENT = os.path.dirname(__file__) + "/icons/rocket.svg"
 
 
 class Dialog(QDialog, Ui_Dialog):
@@ -36,20 +39,15 @@ class Dialog(QDialog, Ui_Dialog):
         self.__initialize()
 
     def __initialize(self):
-        # self.setWindowIcon(QIcon("./client/icons/client.svg"))
+        self.setWindowIcon(QIcon(ROCKET_CLIENT))
+        self.pushButtonSend.setEnabled(False)
+        self.lineEditData.setEnabled(False)
+        self.textEditTraffic.setEnabled(False)
 
         self.__socket = UdpSocket()
         self.__socket.onRead = self.onRead
 
-
-
-        # self.__tcpClient = TcpClient()
-        # self.__tcpClient.onConnected = self.onConnected
-        # self.__tcpClient.onDisconnected = self.onDisconnected
-        # self.__tcpClient.onError = self.onError
-        # self.__tcpClient.onRead = self.onRead
-
-        self.pushButtonConnectDisconnect.clicked.connect(self.onPushButtonConnectDisconnectClicked)
+        self.pushButtonBind.clicked.connect(self.onPushButtonBindClicked)
         self.pushButtonSend.clicked.connect(self.onPushButtonSendClicked)
         self.checkBoxRawText.stateChanged.connect(self.onCheckBoxRawTextStateChanged)
         QObject.connect(self.lineEditData, SIGNAL("keyPressed"), self.__keyPressed)
@@ -80,45 +78,26 @@ class Dialog(QDialog, Ui_Dialog):
 
     def __saveSettings(self):
         pass
-        # settings = QSettings("Rocket Labs", "tdbgc")
-        # settings.setValue("host", self.lineEditHost.text())
-        # settings.setValue("port", self.spinBoxPort.value())
-        # settings.setValue("format", self.comboBoxFormat.currentIndex())
-        # settings.setValue("leadingZeroes", self.checkBoxLeadingZeroes.isChecked())
-        # settings.setValue("timestamp", self.checkBoxTimestamp.isChecked())
-        # settings.setValue("rawText", self.checkBoxRawText.isChecked())
+        settings = QSettings("Rocket Labs", "udbg")
+        settings.setValue("port", self.spinBoxPort.value())
+        settings.setValue("format", self.comboBoxFormat.currentIndex())
+        settings.setValue("leadingZeroes", self.checkBoxLeadingZeroes.isChecked())
+        settings.setValue("timestamp", self.checkBoxTimestamp.isChecked())
+        settings.setValue("rawText", self.checkBoxRawText.isChecked())
 
     def __loadSettings(self):
-        pass
-        # settings = QSettings("Rocket Labs", "tdbgc")
-        # self.lineEditHost.setText(settings.value("host", "localhost").toString())
-        # self.spinBoxPort.setValue(settings.value("port", 80).toInt()[0])
-        # self.comboBoxFormat.setCurrentIndex(settings.value("format", 0).toInt()[0])
-        # self.checkBoxLeadingZeroes.setChecked(settings.value("leadingZeroes", False).toBool())
-        # self.checkBoxTimestamp.setChecked(settings.value("timestamp", False).toBool())
-        # self.checkBoxRawText.setChecked(settings.value("rawText", False).toBool())
+        settings = QSettings("Rocket Labs", "udbg")
+        self.spinBoxPort.setValue(settings.value("port", 80).toInt()[0])
+        self.comboBoxFormat.setCurrentIndex(settings.value("format", 0).toInt()[0])
+        self.checkBoxLeadingZeroes.setChecked(settings.value("leadingZeroes", False).toBool())
+        self.checkBoxTimestamp.setChecked(settings.value("timestamp", False).toBool())
+        self.checkBoxRawText.setChecked(settings.value("rawText", False).toBool())
 
     def closeEvent(self, event):
-        # self.__tcpClient.close()
         self.__saveSettings()
         super(Dialog, self).closeEvent(event)
 
-    # def onConnected(self):
-    #     self.textEditTraffic.setEnabled(True)
-    #     self.lineEditData.setEnabled(True)
-    #     self.pushButtonSend.setEnabled(True)
-    #     self.pushButtonConnectDisconnect.setText("Disconnect")
-    #
-    # def onDisconnected(self):
-    #     self.textEditTraffic.setEnabled(False)
-    #     self.lineEditData.setEnabled(False)
-    #     self.pushButtonSend.setEnabled(False)
-    #     self.pushButtonConnectDisconnect.setText("Connect")
-    #
-    # def onError(self, error):
-    #     self.__postText("E: [%s] %s." % (error.code, error.description))
-
-    def onRead(self, data, host, port):
+    def onRead(self, source, data):
         if self.checkBoxRawText.isChecked():
             dataFormat = "S"
             text = str(data)
@@ -138,7 +117,7 @@ class Dialog(QDialog, Ui_Dialog):
             if not dataFormat:
                 self.__postText("E[?]: Invalid data format.")
 
-        self.__postText("R[%s:%s]: %s" % (dataFormat, len(data), text))
+        self.__postText("R[%s:%s]#[%s:%s]: %s" % (dataFormat, len(data), source[0], source[1], text))
 
     def onCheckBoxRawTextStateChanged(self, state):
         if state == Qt.Checked:
@@ -150,17 +129,12 @@ class Dialog(QDialog, Ui_Dialog):
             self.comboBoxFormat.setEnabled(True)
             self.checkBoxLeadingZeroes.setEnabled(True)
 
-    def onPushButtonConnectDisconnectClicked(self):
-        self.__socket.port = self.spinBoxPort.value()
-        self.__socket.bind()
+    def onPushButtonBindClicked(self):
+        self.pushButtonSend.setEnabled(True)
+        self.lineEditData.setEnabled(True)
+        self.textEditTraffic.setEnabled(True)
 
-        # state = self.__tcpClient.state()
-        # if QTcpSocket.ConnectedState == state:
-        #     self.__tcpClient.disconnectFromHost()
-        # elif QTcpSocket.UnconnectedState == state:
-        #     host = self.lineEditHost.text()
-        #     port = self.spinBoxPort.value()
-        #     self.__tcpClient.connectToHost(host, port)
+        self.__socket.bind(self.spinBoxPort.value())
 
     def onPushButtonSendClicked(self):
         text = self.lineEditData.text().simplified()
@@ -194,7 +168,7 @@ class Dialog(QDialog, Ui_Dialog):
                 self.__postText("E[?]: Invalid data format.")
 
         self.__postText("T[%s:%s]: %s" % (dataFormat, len(data), text))
-        self.__socket.write(data, QHostAddress.Any, 9999)
+        self.__socket.write(data)
 
         self.__history.add(self.lineEditData.text())
         self.lineEditData.clear()
