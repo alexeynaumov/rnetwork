@@ -113,7 +113,7 @@ class Dialog(QDialog, Ui_Dialog):
         self.pushButtonConnectDisconnect.setText("Connect")
 
     def onError(self, error):
-        self.__postText("E: [%s] %s." % (error.code, error.description))
+        self.__postText("E: [%s] %s." % (error[0], error[1]))
 
     def onRead(self, data):
         if self.checkBoxRawText.isChecked():

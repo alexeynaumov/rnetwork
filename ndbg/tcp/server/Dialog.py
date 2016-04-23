@@ -110,7 +110,7 @@ class Dialog(QDialog, Ui_Dialog):
             self.listWidgetClients.takeItem(row)
 
     def onError(self, descriptor, error):
-        self.__postText("E[%s#%s]: %s." % (error.code, descriptor, error.description))
+        self.__postText("E[%s#%s]: %s." % (error[0], descriptor, error[1]))
 
     def onRead(self, descriptor, data):
         if self.checkBoxRawText.isChecked():
