@@ -21,7 +21,7 @@
 
 import sys
 from PyQt4.QtGui import QApplication
-from server.Dialog import Dialog
+from ndbg.tcp.server.Dialog import Dialog
 
 
 def main():
