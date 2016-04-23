@@ -29,8 +29,8 @@ from ndbg.tcp.server.Dialog import Dialog
 def main():
     application = QApplication(sys.argv)
 
-    client = Dialog()
-    client.show()
+    server = Dialog()
+    server.show()
 
     sys.exit(application.exec_())
 
