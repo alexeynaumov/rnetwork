@@ -51,10 +51,12 @@ class UdpSocket(QObject):
             size = self.__socket.pendingDatagramSize()
             data, host, port = self.__socket.readDatagram(size)
 
-            if str(host.toString()) in self.__ips:  # if the datagram comes from the local IP, we simply ignore it
+            host = str(host.toString())
+
+            if host in self.__ips:  # if the datagram comes from the local IP, we simply ignore it
                 return
 
-            source = (str(host.toString()), port)
+            source = (host, port)
 
             if self.__on_read:
                 self.__on_read(source, data)
